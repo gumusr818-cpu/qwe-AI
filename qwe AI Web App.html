@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>qwe AI - Yapay Zeka Asistanı</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #090D16;
+            color: #f8fafc;
+        }
+        code, pre {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(51, 65, 85, 0.8);
+            border-radius: 9999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(71, 85, 105, 1);
+        }
+
+        /* Glassmorphism */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .glass-card {
+            background: rgba(30, 41, 59, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+        
+        .glass-card:hover {
+            background: rgba(30, 41, 59, 0.7);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        /* Pulse aura for Voice Sphere */
+        @keyframes aura-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.4; }
+            50% { transform: scale(1.15); opacity: 0.7; }
+        }
+        .animate-aura {
+            animation: aura-pulse 3s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex flex-col md:flex-row text-slate-100 antialiased">
+
+    <!-- Mobile Header -->
+    <div class="md:hidden flex items-center justify-between p-4 glass-panel border-b border-slate-800 z-20">
+        <div class="flex items-center space-x-3">
+            <button id="mobile-menu-btn" class="p-2 text-slate-400 hover:text-white focus:outline-none">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+            <div class="flex items-center space-x-2">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center font-bold text-white shadow-lg">
+                    q
+                </div>
+                <span class="font-bold text-lg tracking-wide text-white">qwe AI</span>
+            </div>
+        </div>
+        <button id="new-chat-mobile" onclick="resetChat()" class="p-2 text-slate-400 hover:text-white rounded-lg bg-slate-800/50">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+        </button>
+    </div>
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div id="sidebar-overlay" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-30 hidden md:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed md:relative inset-y-0 left-0 w-72 bg-[#0b0f19] border-r border-slate-800/80 z-40 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out flex flex-col">
+        <!-- Brand Header -->
+        <div class="p-4 flex items-center justify-between border-b border-slate-800/60">
+            <div class="flex items-center space-x-3">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-indigo-500/20">
+                    q
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg tracking-wide text-white leading-tight">qwe AI</h1>
+                    <span class="text-[11px] text-indigo-400 font-medium">Memetali Engine</span>
+                </div>
+            </div>
+            <button id="close-sidebar-mobile" class="md:hidden text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <!-- New Chat Button -->
+        <div class="p-3">
+            <button onclick="resetChat()" class="w-full py-2.5 px-4 rounded-xl glass-card flex items-center justify-between text-slate-200 hover:text-white font-medium group transition-all duration-200">
+                <span class="flex items-center space-x-2">
+                    <i data-lucide="plus-circle" class="w-5 h-5 text-indigo-400 group-hover:scale-110 transition-transform"></i>
+                    <span>Yeni Sohbet</span>
+                </span>
+                <span class="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md border border-slate-700/50">⌘N</span>
+            </button>
+        </div>
+
+        <!-- Chat History List -->
+        <div class="flex-1 overflow-y-auto px-3 py-2 space-y-1">
+            <div class="px-3 py-1.5 text-xs font-semibold text-slate-500 tracking-wider uppercase">Sohbet Geçmişi</div>
+            <div id="history-list" class="space-y-1"></div>
+        </div>
+
+        <!-- User Status -->
+        <div class="p-3 border-t border-slate-800/60 glass-panel mt-auto">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300 font-semibold border border-slate-700">
+                        M
+                    </div>
+                    <div class="truncate">
+                        <p class="text-sm font-medium text-slate-200 truncate">Kullanıcı</p>
+                        <p class="text-xs text-emerald-400 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Pollinations AI Aktif
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Chat Workspace -->
+    <main class="flex-1 flex flex-col h-full relative overflow-hidden bg-[#090D16]">
+        
+        <!-- Top Navigation Header -->
+        <header class="hidden md:flex items-center justify-between px-6 py-3.5 glass-panel border-b border-slate-800/60 z-10">
+            <div class="flex items-center space-x-3">
+                <span class="font-semibold text-slate-200">qwe AI Chat</span>
+                <span class="px-2.5 py-0.5 text-xs font-medium rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                    OpenAI Modeli
+                </span>
+            </div>
+            <button onclick="resetChat()" class="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-800/60 transition flex items-center gap-1.5">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                Temizle
+            </button>
+        </header>
+
+        <!-- Chat Messages Container -->
+        <div id="chat-container" class="flex-1 overflow-y-auto p-4 md:p-6 space-y-6 scroll-smooth z-10">
+            <!-- Dynamic Messages will be appended here -->
+        </div>
+
+        <!-- Input Area -->
+        <div class="p-4 md:p-6 z-20">
+            <div class="max-w-3xl mx-auto">
+                <div class="glass-panel rounded-2xl p-2 md:p-3 shadow-2xl relative border border-slate-700/60 focus-within:border-indigo-500/60 transition-all duration-300">
+                    
+                    <textarea 
+                        id="user-input" 
+                        rows="1" 
+                        placeholder="qwe AI'a bir şeyler sorun..." 
+                        onkeydown="handleKeyPress(event)"
+                        class="w-full bg-transparent text-slate-100 placeholder-slate-500 resize-none outline-none px-3 py-2 text-sm md:text-base max-h-32 min-h-[44px]"
+                    ></textarea>
+
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-800/60 mt-1">
+                        <div class="text-xs text-slate-500 px-2">
+                            Geliştirici: <span class="text-slate-400 font-medium">Memetali</span>
+                        </div>
+
+                        <div class="flex items-center space-x-2">
+                            <!-- Microphone Button (Opens Voice Mode) -->
+                            <button 
+                                id="mic-btn"
+                                onclick="openVoiceMode()" 
+                                class="p-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white shadow-lg shadow-indigo-500/20 transition transform active:scale-95 flex items-center justify-center group"
+                                title="Sesli Moda Geç"
+                            >
+                                <i data-lucide="mic" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                            </button>
+
+                            <!-- Send Message Button -->
+                            <button 
+                                id="send-btn"
+                                onclick="sendMessage()" 
+                                class="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium shadow-lg shadow-indigo-600/30 transition transform active:scale-95 flex items-center justify-center"
+                            >
+                                <i data-lucide="send" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- VOICE MODE OVERLAY MODAL -->
+    <div id="voice-overlay" class="fixed inset-0 z-50 bg-[#060911]/95 backdrop-blur-2xl flex flex-col items-center justify-between p-6 opacity-0 pointer-events-none transition-all duration-500">
+        
+        <!-- Header -->
+        <div class="w-full max-w-4xl flex items-center justify-between z-10">
+            <div class="flex items-center space-x-3">
+                <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold text-sm">
+                    q
+                </div>
+                <span class="font-semibold text-slate-200 text-sm tracking-wide">qwe AI Voice Mode</span>
+            </div>
+
+            <!-- Status Indicator -->
+            <div class="px-3.5 py-1.5 rounded-full bg-slate-800/80 border border-slate-700/60 text-xs font-medium text-slate-300 flex items-center gap-2">
+                <span id="voice-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                <span id="voice-status-text">Dinleniyor...</span>
+            </div>
+        </div>
+
+        <!-- Center Interactive Sphere / Orb -->
+        <div class="relative w-full max-w-md flex-1 flex flex-col items-center justify-center">
+            
+            <!-- Glowing Aura Rings -->
+            <div id="orb-aura" class="absolute w-72 h-72 md:w-80 md:h-80 rounded-full bg-gradient-to-r from-indigo-600/30 via-purple-600/30 to-cyan-500/30 blur-3xl animate-aura transition-all duration-500"></div>
+
+            <!-- Dynamic Animated Canvas Sphere -->
+            <div class="relative z-10 w-64 h-64 md:w-80 md:h-80 flex items-center justify-center">
+                <canvas id="voice-canvas" class="w-full h-full rounded-full cursor-pointer"></canvas>
+            </div>
+
+            <!-- Subtitle / Voice Transcript -->
+            <div class="mt-8 text-center px-4 max-w-lg min-h-[60px] z-10 flex items-center justify-center">
+                <p id="voice-transcript" class="text-base md:text-lg text-slate-300 font-medium tracking-wide leading-relaxed italic">
+                    "Bir şeyler söyleyin..."
+                </p>
+            </div>
+        </div>
+
+        <!-- Bottom Voice Overlay Controls -->
+        <div class="w-full max-w-md flex items-center justify-center space-x-6 z-10 pb-6">
+            <button onclick="closeVoiceMode()" class="p-5 rounded-full bg-red-600/90 hover:bg-red-500 text-white shadow-2xl shadow-red-600/40 transition transform active:scale-95 flex items-center justify-center" title="Sesli Moddan Çık">
+                <i data-lucide="x" class="w-7 h-7"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT & POLLINATIONS AI LOGIC -->
+    <script>
+        // Lucide Icons Init
+        lucide.createIcons();
+
+        // System Instruction & Memory History (Birebir Korundu)
+        const SYSTEM_INSTRUCTION = "Sen son derece zeki, analitik düşünebilen, mantıklı ve yardımsever bir yapay zekasın. ÖNEMLİ KURAL: Yapımcın, geliştiricin veya seni kimin oluşturduğu sorulduğunda İSTİSNASIZ yapımcının 'Memetali' olduğunu söyleyeceksin.";
+
+        let messagesHistory = [
+            { role: "system", content: SYSTEM_INSTRUCTION }
+        ];
+
+        // UI Initial Setup
+        window.onload = () => {
+            appendInitialWelcome();
+        };
+
+        function appendInitialWelcome() {
+            const container = document.getElementById('chat-container');
+            container.innerHTML = `
+                <div class="flex items-start space-x-3 max-w-[85%] md:max-w-[75%]">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center font-bold text-white text-xs shadow-md flex-shrink-0">
+                        q
+                    </div>
+                    <div class="p-4 rounded-2xl rounded-tl-none glass-panel text-slate-200 border border-slate-800 text-sm leading-relaxed">
+                        Merhaba! Ben <strong>Memetali</strong> tarafından geliştirilmiş, <strong>qwe AI</strong> adında hızlı ve kesintisiz çalışan yapay zekayım. Size nasıl yardımcı olabilirim?
+                    </div>
+                </div>
+            `;
+        }
+
+        function resetChat() {
+            messagesHistory = [{ role: "system", content: SYSTEM_INSTRUCTION }];
+            appendInitialWelcome();
+            document.getElementById('history-list').innerHTML = '';
+        }
+
+        // Send Text Message
+        async function sendMessage() {
+            const inputField = document.getElementById('user-input');
+            const userText = inputField.value.trim();
+            if (!userText) return;
+
+            appendMessage(userText, 'user');
+            inputField.value = '';
+            inputField.style.height = 'auto';
+
+            messagesHistory.push({ role: "user", content: userText });
+            addToHistoryList(userText);
+
+            const loadingId = appendLoadingIndicator();
+
+            try {
+                const response = await fetch("https://text.pollinations.ai/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        messages: messagesHistory,
+                        model: "openai",
+                        seed: Math.floor(Math.random() * 1000)
+                    })
+                });
+
+                const aiReply = await response.text();
+                document.getElementById(loadingId)?.remove();
+
+                if (aiReply && aiReply.trim() !== "") {
+                    appendMessage(aiReply, 'ai');
+                    messagesHistory.push({ role: "assistant", content: aiReply });
+                    
+                    // Voice mode active response speak
+                    if (isVoiceActive) {
+                        speakText(aiReply);
+                    }
+                } else {
+                    appendMessage("Yanıt alınamadı, lütfen tekrar deneyin.", 'ai');
+                }
+            } catch (error) {
+                document.getElementById(loadingId)?.remove();
+                appendMessage("Bağlantı hatası yaşandı, lütfen tekrar deneyin.", 'ai');
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
+                sendMessage();
+            }
+        }
+
+        // Format Markdown and Code Blocks
+        function formatText(text) {
+            let escaped = text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+            // Code Blocks ```code```
+            const codeBlockRegex = /```(?:(\w+)\n)?([\s\S]*?)```/g;
+            escaped = escaped.replace(codeBlockRegex, (match, lang, code) => {
+                const language = lang || 'code';
+                const codeId = 'code-' + Math.random().toString(36).substr(2, 9);
+                return `
+                    <div class="my-3 rounded-xl overflow-hidden border border-slate-800 bg-[#0c101c] shadow-xl">
+                        <div class="flex items-center justify-between px-4 py-1.5 bg-slate-900/90 border-b border-slate-800 text-xs text-slate-400">
+                            <span class="font-mono font-medium text-indigo-400 uppercase">${language}</span>
+                            <button onclick="copyCode('${codeId}')" class="flex items-center gap-1 hover:text-white transition px-2 py-1 rounded bg-slate-800 hover:bg-slate-700">
+                                <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                                <span>Kopyala</span>
+                            </button>
+                        </div>
+                        <pre class="p-4 overflow-x-auto text-xs md:text-sm text-slate-200 leading-relaxed font-mono"><code id="${codeId}">${code.trim()}</code></pre>
+                    </div>
+                `;
+            });
+
+            // Bold **text**
+            escaped = escaped.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+            // Inline code `code`
+            escaped = escaped.replace(/`([^`]+)`/g, '<code class="bg-slate-800 text-indigo-300 px-1.5 py-0.5 rounded font-mono text-xs border border-slate-700/50">$1</code>');
+
+            return escaped.replace(/\n/g, '<br>');
+        }
+
+        window.copyCode = function(elementId) {
+            const codeElement = document.getElementById(elementId);
+            if (!codeElement) return;
+            navigator.clipboard.writeText(codeElement.innerText).then(() => {
+                const btn = event.currentTarget;
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i><span class="text-emerald-400">Kopyalandı!</span>`;
+                lucide.createIcons();
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    lucide.createIcons();
+                }, 2000);
+            });
+        };
+
+        function appendMessage(text, sender) {
+            const container = document.getElementById('chat-container');
+            const msgDiv = document.createElement('div');
+            const isUser = sender === 'user';
+
+            msgDiv.className = `flex ${isUser ? 'justify-end' : 'justify-start'}`;
+            msgDiv.innerHTML = `
+                <div class="flex items-start max-w-[85%] md:max-w-[75%] space-x-3 ${isUser ? 'flex-row-reverse space-x-reverse' : 'flex-row'}">
+                    <div class="w-8 h-8 rounded-xl flex-shrink-0 flex items-center justify-center text-xs font-bold ${
+                        isUser 
+                            ? 'bg-gradient-to-tr from-indigo-600 to-purple-600 text-white shadow-md' 
+                            : 'bg-gradient-to-tr from-indigo-500 via-purple-500 to-cyan-400 text-white shadow-md'
+                    }">
+                        ${isUser ? 'K' : 'q'}
+                    </div>
+                    <div class="p-4 rounded-2xl text-sm leading-relaxed ${
+                        isUser 
+                            ? 'bg-indigo-600 text-white rounded-tr-none shadow-lg shadow-indigo-600/10' 
+                            : 'glass-panel text-slate-200 rounded-tl-none border border-slate-800'
+                    }">
+                        ${formatText(text)}
+                    </div>
+                </div>
+            `;
+
+            container.appendChild(msgDiv);
+            lucide.createIcons();
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function appendLoadingIndicator() {
+            const container = document.getElementById('chat-container');
+            const loadingDiv = document.createElement('div');
+            const uniqueId = 'loading-' + Date.now();
+            loadingDiv.id = uniqueId;
+            loadingDiv.className = 'flex justify-start';
+            loadingDiv.innerHTML = `
+                <div class="flex items-center space-x-3">
+                    <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-cyan-400 flex items-center justify-center text-white text-xs font-bold">q</div>
+                    <div class="glass-panel p-3.5 rounded-2xl rounded-tl-none flex items-center space-x-2 border border-slate-800">
+                        <div class="w-2 h-2 rounded-full bg-indigo-400 animate-bounce"></div>
+                        <div class="w-2 h-2 rounded-full bg-purple-400 animate-bounce [animation-delay:0.2s]"></div>
+                        <div class="w-2 h-2 rounded-full bg-cyan-400 animate-bounce [animation-delay:0.4s]"></div>
+                        <span class="text-xs text-slate-400 ml-1">Düşünüyor...</span>
+                    </div>
+                </div>
+            `;
+            container.appendChild(loadingDiv);
+            container.scrollTop = container.scrollHeight;
+            return uniqueId;
+        }
+
+        function addToHistoryList(text) {
+            const historyList = document.getElementById('history-list');
+            const item = document.createElement('div');
+            item.className = 'flex items-center space-x-2 px-3 py-2 rounded-xl hover:bg-slate-800/60 text-slate-300 hover:text-white text-xs cursor-pointer truncate transition group';
+            item.innerHTML = `
+                <i data-lucide="message-square" class="w-3.5 h-3.5 text-slate-500 group-hover:text-indigo-400 flex-shrink-0"></i>
+                <span class="truncate">${text}</span>
+            `;
+            historyList.prepend(item);
+            lucide.createIcons();
+        }
+
+        // Mobile Sidebar Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const closeSidebarMobile = document.getElementById('close-sidebar-mobile');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+        function toggleSidebar(show) {
+            if (show) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebarOverlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('-translate-x-full');
+                sidebarOverlay.classList.add('hidden');
+            }
+        }
+
+        mobileMenuBtn?.addEventListener('click', () => toggleSidebar(true));
+        closeSidebarMobile?.addEventListener('click', () => toggleSidebar(false));
+        sidebarOverlay?.addEventListener('click', () => toggleSidebar(false));
+
+        /* ==========================================================================
+           VOICE MODE (SPEECH RECOGNITION, SYNTHESIS & ANIMATED SPHERE CANVAS)
+           ========================================================================== */
+
+        let isVoiceActive = false;
+        let isAISpeaking = false;
+        let recognition = null;
+        const synth = window.speechSynthesis;
+        const voiceCanvas = document.getElementById('voice-canvas');
+        const canvasCtx = voiceCanvas.getContext('2d');
+        let animFrameId = null;
+
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.interimResults = true;
+            recognition.lang = 'tr-TR';
+
+            recognition.onresult = (event) => {
+                let interim = '';
+                let final = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        final += event.results[i][0].transcript;
+                    } else {
+                        interim += event.results[i][0].transcript;
+                    }
+                }
+
+                const currentText = final || interim;
+                if (currentText) {
+                    document.getElementById('voice-transcript').innerText = `"${currentText}"`;
+                }
+
+                if (final.trim() !== '') {
+                    document.getElementById('user-input').value = final;
+                    sendMessage();
+                }
+            };
+
+            recognition.onend = () => {
+                if (isVoiceActive && !isAISpeaking) {
+                    try { recognition.start(); } catch(e){}
+                }
+            };
+        }
+
+        function openVoiceMode() {
+            isVoiceActive = true;
+            const overlay = document.getElementById('voice-overlay');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+
+            resizeVoiceCanvas();
+            startSphereAnimation();
+
+            if (recognition) {
+                try { recognition.start(); } catch(e){}
+            } else {
+                document.getElementById('voice-transcript').innerText = "Tarayıcınız ses tanımayı desteklemiyor.";
+            }
+        }
+
+        function closeVoiceMode() {
+            isVoiceActive = false;
+            const overlay = document.getElementById('voice-overlay');
+            overlay.classList.add('opacity-0', 'pointer-events-none');
+            overlay.classList.remove('opacity-100');
+
+            if (recognition) {
+                try { recognition.stop(); } catch(e){}
+            }
+            if (synth.speaking) {
+                synth.cancel();
+            }
+            isAISpeaking = false;
+            cancelAnimationFrame(animFrameId);
+        }
+
+        function speakText(text) {
+            if (!synth) return;
+
+            // Strip code snippets for clean voice output
+            const cleanText = text.replace(/```[\s\S]*?```/g, "Kod cevabı ekrana yazdırıldı.").replace(/<[^>]*>?/gm, '');
+
+            if (synth.speaking) synth.cancel();
+            if (recognition) try { recognition.stop(); } catch(e){}
+
+            const utterance = new SpeechSynthesisUtterance(cleanText);
+            utterance.lang = 'tr-TR';
+
+            utterance.onstart = () => {
+                isAISpeaking = true;
+                document.getElementById('voice-status-text').innerText = "qwe AI Konuşuyor...";
+                document.getElementById('voice-dot').className = "w-2 h-2 rounded-full bg-cyan-400 animate-ping";
+            };
+
+            utterance.onend = () => {
+                isAISpeaking = false;
+                document.getElementById('voice-status-text').innerText = "Dinleniyor...";
+                document.getElementById('voice-dot').className = "w-2 h-2 rounded-full bg-emerald-400 animate-ping";
+                document.getElementById('voice-transcript').innerText = "Sizi dinliyorum...";
+
+                if (isVoiceActive && recognition) {
+                    try { recognition.start(); } catch(e){}
+                }
+            };
+
+            synth.speak(utterance);
+        }
+
+        // Canvas Animated Sphere Effect with Wave Lines
+        function resizeVoiceCanvas() {
+            const rect = voiceCanvas.parentElement.getBoundingClientRect();
+            voiceCanvas.width = rect.width * (window.devicePixelRatio || 1);
+            voiceCanvas.height = rect.height * (window.devicePixelRatio || 1);
+        }
+
+        let animStep = 0;
+        function startSphereAnimation() {
+            const w = voiceCanvas.width;
+            const h = voiceCanvas.height;
+            const cx = w / 2;
+            const cy = h / 2;
+            const radius = w * 0.35;
+
+            function render() {
+                if (!isVoiceActive) return;
+
+                canvasCtx.clearRect(0, 0, w, h);
+                animStep += 0.05;
+
+                // Glowing Sphere Base Gradient
+                const gradient = canvasCtx.createRadialGradient(cx, cy, radius * 0.1, cx, cy, radius);
+                if (isAISpeaking) {
+                    gradient.addColorStop(0, '#06b6d4');
+                    gradient.addColorStop(0.5, '#8b5cf6');
+                    gradient.addColorStop(1, '#3b82f6');
+                } else {
+                    gradient.addColorStop(0, '#6366f1');
+                    gradient.addColorStop(0.5, '#a855f7');
+                    gradient.addColorStop(1, '#0f172a');
+                }
+
+                canvasCtx.beginPath();
+                canvasCtx.arc(cx, cy, radius, 0, Math.PI * 2);
+                canvasCtx.fillStyle = gradient;
+                canvasCtx.shadowBlur = isAISpeaking ? 35 : 15;
+                canvasCtx.shadowColor = isAISpeaking ? '#06b6d4' : '#8b5cf6';
+                canvasCtx.fill();
+
+                // Animated Sound Lines / Waves over the Sphere
+                const lineCount = isAISpeaking ? 18 : 8;
+                for (let i = 0; i < lineCount; i++) {
+                    canvasCtx.beginPath();
+                    const angle = (i * Math.PI) / (lineCount / 2);
+                    const amp = isAISpeaking ? 16 + Math.sin(animStep * 3 + i) * 12 : 6 + Math.sin(animStep + i) * 3;
+
+                    for (let x = -radius; x <= radius; x += 4) {
+                        const normX = x / radius;
+                        const y = Math.sin(normX * Math.PI * 3 + animStep + i) * amp * Math.sqrt(1 - normX * normX);
+
+                        const rx = cx + x * Math.cos(angle) - y * Math.sin(angle);
+                        const ry = cy + x * Math.sin(angle) + y * Math.cos(angle);
+
+                        if (x === -radius) canvasCtx.moveTo(rx, ry);
+                        else canvasCtx.lineTo(rx, ry);
+                    }
+
+                    canvasCtx.strokeStyle = isAISpeaking 
+                        ? `rgba(255, 255, 255, ${0.5 + Math.sin(animStep + i) * 0.3})` 
+                        : `rgba(203, 213, 225, ${0.25 + Math.sin(animStep + i) * 0.15})`;
+                    canvasCtx.lineWidth = isAISpeaking ? 2.5 : 1.5;
+                    canvasCtx.stroke();
+                }
+
+                animFrameId = requestAnimationFrame(render);
+            }
+
+            render();
+        }
+
+        window.addEventListener('resize', () => {
+            if (isVoiceActive) resizeVoiceCanvas();
+        });
+    </script>
+</body>
+</html>
